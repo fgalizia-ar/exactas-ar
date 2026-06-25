@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Navegación Campus AR</title>
+    
+    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.4.2/dist/aframe-master.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js" async crossorigin="anonymous" data-preload-chunks="slam"></script>
+    <script src="mapa.js"></script>
+
+    <style>
+        #menu-ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: sans-serif;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 85%;
+            max-width: 320px;
+        }
+        select { padding: 6px; font-size: 14px; margin-bottom: 8px; width: 100%; }
+        #indicador-distancia, #indicador-posicion { font-size: 12px; color: #333; font-weight: bold; margin-bottom: 5px; }
+        .btn-dev { background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin: 2px; }
+        .btn-reset { background: #FF3B30; }
+    </style>
+</head>
+<body>
+
+    <div id="menu-ui">
+        <label for="aulas"><strong>Buscar Aula:</strong> </label><br>
+        <select id="aulas">
+            <option value="none">-- Selecciona destino --</option>
+            <option value="AULA_101">Aula 101 (Química Orgánica) - PB</option>
+            <option value="AULA_102">Aula 102 (Laboratorio Central) - PB</option>
+            <option value="BANYO_S_GENERO">Baño sin género - 1° Piso</option>
+            <option value="PASTEUR">Pasteur (L) - 1° Piso</option>
+            <option value="INORGANICA">Qca. Inorgánica (L) - 1° Piso</option>
+            <option value="VUCETICH">Vucetich (A) - 1° Piso</option>
+            <option value="INTRODUCCION">Introducción a la Qca. (L) - 1° Piso</option>
+            <option value="LAB_CHICO">Laboratorio chico (L) - 1° Piso</option>
+            <option value="ASCENSOR_P1">Ascensor - 1° Piso</option>
+            <option value="ORGANICA_SUP">Qca. Orgánica Superior (L) - 1° Piso</option>
+            <option value="ANALITICA_1">Qca. Analítica I (L) - 1° Piso</option>
+            <option value="SALIDA_EMERGENCIA_P1">Salida Emergencia - 1° Piso</option>
+        </select>
+
+        <div id="indicador-posicion">Posición: (X: 0.0, Y: 0.0, Z: 0.0)</div>
+        <div id="indicador-distancia">Distancia al aula: -- m</div>
+        
+        <div>
+            <button class="btn-dev" id="btn-avanzar">Avanzar 2 metros</button>
+            <button class="btn-dev btn-reset" id="btn-reset">Reset</button>
+        </div>
+    </div>
+
+    <a-scene xrweb="allowedDevices: any" vr-mode-ui="enabled: false">
+      <a-camera id="camera" position="0 1.6 0"></a-camera>
+      <a-light type="ambient" intensity="0.8"></a-light>
+
+      <a-entity id="guia-navegacion" position="0 0.5 -2" visible="false">
+          <a-box width="0.15" height="0.01" depth="0.5" color="#FF3B30" position="0 0 0"></a-box>
+          <a-triangle color="#FF3B30" 
+                      vertex-a="0 0 -0.55" 
+                      vertex-b="-0.2 0 -0.25" 
+                      vertex-c="0.2 0 -0.25" 
+                      material="side: double">
+          </a-triangle>
+      </a-entity>
+    </a-scene>
+
+    <script>
+        let usuarioPos = { x: 0, y: 0, z: 0 }; 
+        let destinoActual = "none";
+
+        const selectorAulas = document.getElementById('aulas');
+        const guiaNavegacion = document.getElementById('guia-navegacion');
+        const indicadorDistancia = document.getElementById('indicador-distancia');
+        const indicadorPosicion = document.getElementById('indicador-posicion');
+        const btnAvanzar = document.getElementById('btn-avanzar');
+        const btnReset = document.getElementById('btn-reset');
+
+        function actualizarNavegacion() {
+            if (destinoActual === 'none') {
+                guiaNavegacion.setAttribute('visible', 'false');
+                indicadorDistancia.innerText = "Distancia al aula: -- m";
+                return;
+            }
+
+            let nodoMasCercano = "ENTRADA_47"; 
+            let distanciaMinima = Infinity;
+            
+            for (let nombreNodo in MAPA_CAMPUS.nodos) {
+                let d = calcularDistancia3D(usuarioPos, MAPA_CAMPUS.nodos[nombreNodo]);
+                if (d < distanciaMinima) {
+                    distanciaMinima = d;
+                    nodoMasCercano = nombreNodo;
+                }
+            }
+
+            let distanciaAlDestinoFinal = calcularDistancia3D(usuarioPos, MAPA_CAMPUS.nodos[destinoActual]);
+            if (distanciaAlDestinoFinal < 0.8) {
+                guiaNavegacion.setAttribute('visible', 'false');
+                indicadorDistancia.innerText = "¡Has llegado a tu destino!";
+                return;
+            }
+
+            const resultado = encontrarCaminoOptimo(nodoMasCercano, destinoActual);
+            const ruta = resultado.ruta;
+
+            if (ruta.length < 2) {
+                orientarFlechaHacia(MAPA_CAMPUS.nodos[destinoActual]);
+                indicadorDistancia.innerText = `Distancia al aula: ${distanciaAlDestinoFinal.toFixed(1)} metros`;
+            } else {
+                let siguientePuntoControl = MAPA_CAMPUS.nodos[ruta[1]];
+                orientarFlechaHacia(siguientePuntoControl);
+                
+                let distanciaAlSiguienteNodo = calcularDistancia3D(usuarioPos, siguientePuntoControl);
+                let distanciaTotalCalculada = distanciaAlSiguienteNodo + (resultado.distanciaTotal - calcularDistancia3D(MAPA_CAMPUS.nodos[nodoMasCercano], siguientePuntoControl));
+                indicadorDistancia.innerText = `Distancia al aula: ${distanciaTotalCalculada.toFixed(1)} metros`;
+            }
+            
+            guiaNavegacion.setAttribute('visible', 'true');
+            indicadorPosicion.innerText = `Posición: (X: ${usuarioPos.x.toFixed(1)}, Y: ${usuarioPos.y.toFixed(1)}, Z: ${usuarioPos.z.toFixed(1)})`;
+        }
+
+        function orientarFlechaHacia(targetCoords) {
+            const dx = targetCoords.x - usuarioPos.x;
+            const dy = targetCoords.y - usuarioPos.y; 
+            const dz = targetCoords.z - usuarioPos.z;
+
+            const anguloHorizontal = (Math.atan2(dx, dz) * 180 / Math.PI) + 180;
+            const distanciaHorizontal = Math.sqrt(dx * dx + dz * dz);
+            let anguloVertical = Math.atan2(dy, distanciaHorizontal) * 180 / Math.PI;
+            
+            guiaNavegacion.setAttribute('rotation', `${anguloVertical} ${anguloHorizontal} 0`);
+        }
+
+        selectorAulas.addEventListener('change', (e) => {
+            destinoActual = e.target.value;
+            actualizarNavegacion();
+        });
+
+        btnAvanzar.addEventListener('click', () => {
+            if (destinoActual === 'none') return;
+            
+            const targetNodo = MAPA_CAMPUS.nodos[destinoActual];
+            const esPrimerPiso = (targetNodo.y > 0);
+
+            if (esPrimerPiso) {
+                // Navegación tridimensional acoplada a tu espina dorsal real
+                if (usuarioPos.y < 5.3 && usuarioPos.z > -12.0) {
+                    usuarioPos.z -= 2.0; // Se mueve hacia la escalera de PB
+                } else if (usuarioPos.z <= -12.0 && usuarioPos.y < 5.3) {
+                    usuarioPos.y += 1.325; // Sube verticalmente (Escalera)
+                    if(usuarioPos.y > 5.3) usuarioPos.y = 5.3;
+                } else if (usuarioPos.y >= 5.3 && usuarioPos.z > targetNodo.z) {
+                    usuarioPos.z -= 2.0; // Avanza recto por el pasillo alto descontando Z
+                    if(usuarioPos.z < targetNodo.z && targetNodo.x === 0) usuarioPos.z = targetNodo.z;
+                } else {
+                    // Desplazamiento lateral exacto hacia el aula (Izquierda o Derecha)
+                    if (usuarioPos.x < targetNodo.x) {
+                        usuarioPos.x += 1.0;
+                        if(usuarioPos.x > targetNodo.x) usuarioPos.x = targetNodo.x;
+                    } else if (usuarioPos.x > targetNodo.x) {
+                        usuarioPos.x -= 1.0;
+                        if(usuarioPos.x < targetNodo.x) usuarioPos.x = targetNodo.x;
+                    }
+                }
+            } else {
+                // Movimiento básico en Planta Baja
+                if (usuarioPos.z > -8.0) {
+                    usuarioPos.z -= 2.0;
+                } else {
+                    if (destinoActual === "AULA_101") {
+                        if (usuarioPos.x > -6.0) usuarioPos.x -= 2.0;
+                        else if (usuarioPos.z > -14.0) usuarioPos.z -= 2.0;
+                    }
+                    if (destinoActual === "AULA_102") {
+                        if (usuarioPos.x < 10.0) usuarioPos.x += 2.0;
+                    }
+                }
+            }
+            actualizarNavegacion();
+        });
+
+        btnReset.addEventListener('click', () => {
+            usuarioPos = { x: 0, y: 0, z: 0 };
+            destinoActual = "none";
+            selectorAulas.value = "none";
+            actualizarNavegacion();
+        });
+    </script>
+</body>
+</html>
