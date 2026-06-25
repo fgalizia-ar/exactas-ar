@@ -19,33 +19,39 @@
 
     <div class="contenedor-mapa">
         <img src="plano_campus.png" usemap="#mapa-campus" alt="Plano del Campus">
-        
         <map name="mapa-campus">
-            <area shape="rect" coords="50,50,200,200" alt="Edificio Central" href="index.html?edificio=central">
-            <area shape="rect" coords="250,50,450,200" alt="Pabellón de Química" href="index.html?edificio=quimica">
+            <area shape="rect" coords="50,50,450,450" alt="Pabellón de Química" href="navegador.html?edificio=quimica">
         </map>
     </div>
 
     <div>
         <select id="buscador-global">
             <option value="">-- Buscar un aula en todo el campus --</option>
-            <optgroup label="Edificio Central">
-                <option value="index.html?edificio=central&destino=AULA_101">Aula 101 - PB</option>
-                <option value="index.html?edificio=central&destino=AULA_102">Aula 102 - PB</option>
+            <optgroup label="Planta Baja">
+                <option value="navegador.html?destino=AULA_101">Aula 101 (Química Orgánica)</option>
+                <option value="navegador.html?destino=AULA_102">Aula 102 (Laboratorio Central)</option>
             </optgroup>
             <optgroup label="Pabellón de Química (1° Piso)">
-                <option value="index.html?edificio=quimica&destino=PASTEUR">Lab. Pasteur</option>
-                <option value="index.html?edificio=quimica&destino=INORGANICA">Lab. Qca. Inorgánica</option>
-                <option value="index.html?edificio=quimica&destino=ANALITICA_1">Lab. Qca. Analítica I</option>
+                <option value="navegador.html?destino=BANYO_S_GENERO">Baño sin género</option>
+                <option value="navegador.html?destino=PASTEUR">Lab. Pasteur</option>
+                <option value="navegador.html?destino=INORGANICA">Lab. Qca. Inorgánica</option>
+                <option value="navegador.html?destino=VUCETICH">Aula Vucetich</option>
+                <option value="navegador.html?destino=INTRODUCCION">Lab. Introducción a la Qca.</option>
+                <option value="navegador.html?destino=LAB_CHICO">Laboratorio chico</option>
+                <option value="navegador.html?destino=ASCENSOR_P1">Ascensor</option>
+                <option value="navegador.html?destino=ORGANICA_SUP">Lab. Qca. Orgánica Superior</option>
+                <option value="navegador.html?destino=ANALITICA_1">Lab. Qca. Analítica I</option>
+                <option value="navegador.html?destino=SALIDA_EMERGENCIA_P1">Salida de Emergencia</option>
             </optgroup>
         </select>
     </div>
 
     <script>
-        // Si eligen un aula directa de la lista desplegable, los redirige al edificio correcto con el destino precargado
         document.getElementById('buscador-global').addEventListener('change', (e) => {
-            if (e.target.value) {
-                window.location.href = e.target.value;
+            const urlDestino = e.target.value;
+            // Si el usuario seleccionó una opción válida, lo redirige automáticamente
+            if (urlDestino) {
+                window.location.href = urlDestino;
             }
         });
     </script>
