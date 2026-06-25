@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Navegación Campus AR</title>
+    <title>Navegación Campus AR - Cámara</title>
     
     <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@v1.4.2/dist/aframe-master.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js" async crossorigin="anonymous" data-preload-chunks="slam"></script>
+    
     <script src="mapa.js"></script>
 
     <style>
@@ -29,12 +30,13 @@
         #indicador-distancia, #indicador-posicion { font-size: 12px; color: #333; font-weight: bold; margin-bottom: 5px; }
         .btn-dev { background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin: 2px; }
         .btn-reset { background: #FF3B30; }
+        .btn-volver { background: #555; text-decoration: none; display: inline-block; padding: 8px 12px; border-radius: 4px; color: white; font-size: 12px; margin: 2px; }
     </style>
 </head>
 <body>
 
     <div id="menu-ui">
-        <label for="aulas"><strong>Buscar Aula:</strong> </label><br>
+        <label for="aulas"><strong>Destino Seleccionado:</strong> </label><br>
         <select id="aulas">
             <option value="none">-- Selecciona destino --</option>
             <option value="AULA_101">Aula 101 (Química Orgánica) - PB</option>
@@ -57,6 +59,7 @@
         <div>
             <button class="btn-dev" id="btn-avanzar">Avanzar 2 metros</button>
             <button class="btn-dev btn-reset" id="btn-reset">Reset</button>
+            <a href="index.html" class="btn-volver">Plano Gral.</a>
         </div>
     </div>
 
@@ -86,6 +89,7 @@
         const btnAvanzar = document.getElementById('btn-avanzar');
         const btnReset = document.getElementById('btn-reset');
 
+        // FUNCIÓN PRINCIPAL: Calcula la ruta óptima y orienta la flecha
         function actualizarNavegacion() {
             if (destinoActual === 'none') {
                 guiaNavegacion.setAttribute('visible', 'false');
@@ -93,6 +97,7 @@
                 return;
             }
 
+            // 1. Localizar el nodo físico del mapa más cercano a la coordenada del usuario
             let nodoMasCercano = "ENTRADA_47"; 
             let distanciaMinima = Infinity;
             
@@ -104,6 +109,7 @@
                 }
             }
 
+            // 2. Verificar si el usuario ya llegó a la puerta del destino
             let distanciaAlDestinoFinal = calcularDistancia3D(usuarioPos, MAPA_CAMPUS.nodos[destinoActual]);
             if (distanciaAlDestinoFinal < 0.8) {
                 guiaNavegacion.setAttribute('visible', 'false');
@@ -111,6 +117,7 @@
                 return;
             }
 
+            // 3. Resolver Dijkstra 3D
             const resultado = encontrarCaminoOptimo(nodoMasCercano, destinoActual);
             const ruta = resultado.ruta;
 
@@ -118,6 +125,7 @@
                 orientarFlechaHacia(MAPA_CAMPUS.nodos[destinoActual]);
                 indicadorDistancia.innerText = `Distancia al aula: ${distanciaAlDestinoFinal.toFixed(1)} metros`;
             } else {
+                // Apuntar la flecha hacia el siguiente punto de control o bifurcación
                 let siguientePuntoControl = MAPA_CAMPUS.nodos[ruta[1]];
                 orientarFlechaHacia(siguientePuntoControl);
                 
@@ -130,6 +138,7 @@
             indicadorPosicion.innerText = `Posición: (X: ${usuarioPos.x.toFixed(1)}, Y: ${usuarioPos.y.toFixed(1)}, Z: ${usuarioPos.z.toFixed(1)})`;
         }
 
+        // ROTACIÓN GEOMÉTRICA DE LA FLECHA EN A-FRAME
         function orientarFlechaHacia(targetCoords) {
             const dx = targetCoords.x - usuarioPos.x;
             const dy = targetCoords.y - usuarioPos.y; 
@@ -142,11 +151,13 @@
             guiaNavegacion.setAttribute('rotation', `${anguloVertical} ${anguloHorizontal} 0`);
         }
 
+        // Escucha cambios manuales en el selector interno
         selectorAulas.addEventListener('change', (e) => {
             destinoActual = e.target.value;
             actualizarNavegacion();
         });
 
+        // SIMULADOR PASO A PASO PARA ALFA TESTING
         btnAvanzar.addEventListener('click', () => {
             if (destinoActual === 'none') return;
             
@@ -154,17 +165,17 @@
             const esPrimerPiso = (targetNodo.y > 0);
 
             if (esPrimerPiso) {
-                // Navegación tridimensional acoplada a tu espina dorsal real
+                // Simulación del recorrido exacto por la escalera y pasillo alto
                 if (usuarioPos.y < 5.3 && usuarioPos.z > -12.0) {
-                    usuarioPos.z -= 2.0; // Se mueve hacia la escalera de PB
+                    usuarioPos.z -= 2.0; // Avanza hacia la base de la escalera
                 } else if (usuarioPos.z <= -12.0 && usuarioPos.y < 5.3) {
-                    usuarioPos.y += 1.325; // Sube verticalmente (Escalera)
+                    usuarioPos.y += 1.325; // Sube los escalones verticalmente (en 4 clics llega a 5.3)
                     if(usuarioPos.y > 5.3) usuarioPos.y = 5.3;
                 } else if (usuarioPos.y >= 5.3 && usuarioPos.z > targetNodo.z) {
-                    usuarioPos.z -= 2.0; // Avanza recto por el pasillo alto descontando Z
+                    usuarioPos.z -= 2.0; // Camina en línea recta devorando metros de Z por el pasillo central
                     if(usuarioPos.z < targetNodo.z && targetNodo.x === 0) usuarioPos.z = targetNodo.z;
                 } else {
-                    // Desplazamiento lateral exacto hacia el aula (Izquierda o Derecha)
+                    // Dobla 90 grados a izquierda o derecha cuando llega a la altura Z del aula
                     if (usuarioPos.x < targetNodo.x) {
                         usuarioPos.x += 1.0;
                         if(usuarioPos.x > targetNodo.x) usuarioPos.x = targetNodo.x;
@@ -174,7 +185,7 @@
                     }
                 }
             } else {
-                // Movimiento básico en Planta Baja
+                // Simulación clásica de Planta Baja (Aulas 101 y 102)
                 if (usuarioPos.z > -8.0) {
                     usuarioPos.z -= 2.0;
                 } else {
@@ -195,6 +206,20 @@
             destinoActual = "none";
             selectorAulas.value = "none";
             actualizarNavegacion();
+        });
+
+        // INTEGRACIÓN ALFA: Lee de manera automática el aula destino pasada en la URL desde la bienvenida
+        window.addEventListener('DOMContentLoaded', () => {
+            const parametrosURL = new URLSearchParams(window.location.search);
+            const destinoSugerido = parametrosURL.get('destino');
+
+            if (destinoSugerido && MAPA_CAMPUS.nodos[destinoSugerido]) {
+                destinoActual = destinoSugerido;
+                selectorAulas.value = destinoSugerido;
+                setTimeout(() => {
+                    actualizarNavegacion();
+                }, 500);
+            }
         });
     </script>
 </body>
