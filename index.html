@@ -6,54 +6,82 @@
     <title>Bienvenido al Campus - Navegación AR</title>
     <style>
         body { font-family: sans-serif; text-align: center; background: #f4f4f7; margin: 0; padding: 20px; }
-        .contenedor-mapa { max-width: 500px; margin: 20px auto; position: relative; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        img { max-width: 100%; height: auto; display: block; }
+        
+        .contenedor-mapa { 
+            max-width: 550px; 
+            margin: 20px auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+        }
+
+        /* ESTILOS INTERACTIVOS PARA LOS EDIFICIOS DEL SVG */
+        svg { width: 100%; height: auto; display: block; }
+        
+        /* Aplica el efecto visual a los ID que configuraste en Inkscape */
+        #herrero, #quimica, #fisica, #matematica, #abuelas {
+            cursor: pointer;
+            transition: fill 0.2s ease, opacity 0.2s ease;
+        }
+
+        /* Al pasar el dedo o el mouse sobre cualquiera de los bloques del campus */
+        #herrero:hover, #quimica:hover, #fisica:hover, #matematica:hover, #abuelas:hover {
+            fill: #007AFF !important; /* Color azul institucional al destacar */
+            opacity: 0.85;
+        }
+
         select { width: 100%; max-width: 320px; padding: 12px; font-size: 16px; border-radius: 8px; margin-top: 15px; }
-        .instruccion { color: #555; font-size: 14px; }
+        .instruccion { color: #555; font-size: 14px; padding: 0 10px; }
     </style>
 </head>
 <body>
 
     <h1>Navegador Campus AR</h1>
-    <p class="instruccion">Toca un edificio en el plano o seleccionalo de la lista:</p>
+    <p class="instruccion">Selecciona el edificio al que deseas dirigirte tocando el plano o usando la lista:</p>
 
     <div class="contenedor-mapa">
-        <img src="plano_campus.png" usemap="#mapa-campus" alt="Plano del Campus">
-        <map name="mapa-campus">
-            <area shape="rect" coords="50,50,450,450" alt="Pabellón de Química" href="navegador.html?edificio=quimica">
-        </map>
-    </div>
+        </div>
 
     <div>
-        <select id="buscador-global">
-            <option value="">-- Buscar un aula en todo el campus --</option>
-            <optgroup label="Planta Baja">
-                <option value="navegador.html?destino=AULA_101">Aula 101 (Química Orgánica)</option>
-                <option value="navegador.html?destino=AULA_102">Aula 102 (Laboratorio Central)</option>
-            </optgroup>
-            <optgroup label="Pabellón de Química (1° Piso)">
-                <option value="navegador.html?destino=BANYO_S_GENERO">Baño sin género</option>
-                <option value="navegador.html?destino=PASTEUR">Lab. Pasteur</option>
-                <option value="navegador.html?destino=INORGANICA">Lab. Qca. Inorgánica</option>
-                <option value="navegador.html?destino=VUCETICH">Aula Vucetich</option>
-                <option value="navegador.html?destino=INTRODUCCION">Lab. Introducción a la Qca.</option>
-                <option value="navegador.html?destino=LAB_CHICO">Laboratorio chico</option>
-                <option value="navegador.html?destino=ASCENSOR_P1">Ascensor</option>
-                <option value="navegador.html?destino=ORGANICA_SUP">Lab. Qca. Orgánica Superior</option>
-                <option value="navegador.html?destino=ANALITICA_1">Lab. Qca. Analítica I</option>
-                <option value="navegador.html?destino=SALIDA_EMERGENCIA_P1">Salida de Emergencia</option>
-            </optgroup>
+        <select id="selector-edificios">
+            <option value="">-- O selecciona un edificio de la lista --</option>
+            <option value="quimica">Edificio de Química</option>
+            <option value="herrero">Edificio Herrero Ducloux</option>
+            <option value="fisica">Edificio de Física</option>
+            <option value="matematica">Edificio de Matemática</option>
+            <option value="abuelas">Edificio Abuelas de Plaza de Mayo</option>
         </select>
     </div>
 
     <script>
-        document.getElementById('buscador-global').addEventListener('change', (e) => {
-            const urlDestino = e.target.value;
-            // Si el usuario seleccionó una opción válida, lo redirige automáticamente
-            if (urlDestino) {
-                window.location.href = urlDestino;
+        // Arreglo con los IDs exactos de Inkscape para automatizar la escucha
+        const edificiosId = ["herrero", "quimica", "fisica", "matematica", "abuelas"];
+
+        // 1. Asignar dinámicamente el evento click a los elementos del SVG si existen en pantalla
+        document.addEventListener("DOMContentLoaded", () => {
+            edificiosId.forEach(id => {
+                const elementoSVG = document.getElementById(id);
+                if (elementoSVG) {
+                    elementoSVG.addEventListener('click', () => {
+                        redireccionarANavegador(id);
+                    });
+                }
+            });
+        });
+
+        // 2. Manejo de selección desde el menú desplegable inferior
+        document.getElementById('selector-edificios').addEventListener('change', (e) => {
+            const idEdificio = e.target.value;
+            if (idEdificio) {
+                redireccionarANavegador(idEdificio);
             }
         });
+
+        // Función encargada de pasar el control al entorno AR
+        function redireccionarANavegador(edificio) {
+            window.location.href = `navegador.html?edificio=${edificio}`;
+        }
     </script>
 </body>
 </html>
