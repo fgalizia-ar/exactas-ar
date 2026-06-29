@@ -25,14 +25,14 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.65161214"
-     inkscape:cx="-110.49518"
+     inkscape:cx="256.28743"
      inkscape:cy="270.86665"
      inkscape:window-width="1280"
      inkscape:window-height="663"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg4621" />
+     inkscape:current-layer="g3245" />
   <defs
      id="defs4618" />
   <g
@@ -69,11 +69,13 @@
       <path
          style="fill:#ff5555;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
          d="m 31.578311,51.76559 0.05323,-7.55613 H 20.120604 v 17.13797 l 4.235916,0.0212 0.01706,-2.39158 5.954676,0.0382 -0.02016,-5.61927 h 1.25884"
-         id="herrero" />
+         id="herrero"
+         class="edificio-click" />
       <path
          style="fill:#ff5555;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
          d="m 35.176533,53.39598 0.01344,2.16163 0.502811,0.0341 v 9.1121 l 7.416602,-0.0594 0.03049,0.67489 5.727297,0.0832 0.06305,-0.66404 6.957197,0.03 -0.08837,-9.40615 0.864547,0.0238 0.05116,-5.3852 -0.730189,5.3e-4 -6e-6,-8.90359 -20.453013,0.12971 0.09663,8.86767 -0.472321,-0.005 0.01035,1.67536"
-         id="quimica" />
+         id="quimica"
+         class="edificio-click" />
       <g
          id="puente"
          transform="translate(63.500003,-5.2916667)">
@@ -114,15 +116,18 @@
     <path
        style="fill:#ff5555;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="m 69.482652,44.18861 h 7.179985 l 0.02425,2.79053 1.819884,0.008 0.07647,-5.81642 h 7.04222 V 47.024 l 1.9873,-0.0143 0.021,-2.80651 7.02447,0.0314 0.0915,15.04381 h -3.63683 V 57.998 l -5.3024,0.01 -0.043,1.99241 -7.052041,0.0503 -0.05661,-2.16407 -5.402717,10e-4 -0.01468,1.44739 -3.713049,-0.0566 z"
-       id="fisica" />
+       id="fisica"
+       class="edificio-click" />
     <path
        style="fill:#ff5555;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="m 102.23253,47.01112 4.15375,-0.73166 3.93001,0.91457 v 15.1726 l -3.88428,0.6402 -4.19948,-0.6402 z"
-       id="matematica" />
+       id="matematica"
+       class="edificio-click" />
     <path
        style="fill:#ff5555;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        d="m 89.058751,10.84022 h 7.35868 l 0.0218,1.63069 -1.58466,0.055 0.0535,5.15963 1.60085,-3.1e-4 0.0254,1.90193 -3.68049,0.008 -0.049,6.51817 14.450269,-0.0915 -0.10684,-6.28697 -3.5315,-0.13787 -0.0365,-2.87194 1.90895,0.0216 -0.0488,-2.79144 -1.89621,-0.066 -0.0388,-3.04928 h 6.63584 l 0.0457,22.90566 -21.082469,0.0915 z"
-       id="abuelas" />
+       id="abuelas"
+       class="edificio-click" />
     <rect
        style="fill:#4d4d4d;fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:0.3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect3885"
