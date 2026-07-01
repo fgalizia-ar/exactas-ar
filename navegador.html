@@ -26,32 +26,53 @@
             width: 85%;
             max-width: 320px;
         }
-        select { padding: 6px; font-size: 14px; margin-bottom: 8px; width: 100%; }
+        select { padding: 8px; font-size: 15px; margin-bottom: 8px; width: 100%; border-radius: 6px; border: 1px solid #ccc; }
         #indicador-distancia, #indicador-posicion { font-size: 12px; color: #333; font-weight: bold; margin-bottom: 5px; }
         .btn-dev { background: #007AFF; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; margin: 2px; }
         .btn-reset { background: #FF3B30; }
         .btn-volver { background: #555; text-decoration: none; display: inline-block; padding: 8px 12px; border-radius: 4px; color: white; font-size: 12px; margin: 2px; }
+
+        /* CARTEL PARPADEANTE DE CALIBRACIÓN */
+        #cartel-calibracion {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.85);
+            color: #FFCC00; /* Amarillo de advertencia técnico */
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-family: sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 80%;
+            max-width: 300px;
+            border: 2px solid #FFCC00;
+            animation: parpadeo 1.5s infinite;
+            display: block;
+        }
+
+        @keyframes parpadeo {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="cartel-calibracion">
+        ⚠️ Por favor, apunte a un código QR de entrada para calibrar
+    </div>
+
     <div id="menu-ui">
+        <h4 id="titulo-edificio" style="margin: 0 0 10px 0; color: #007AFF;">Navegador AR</h4>
         <label for="aulas"><strong>Destino Seleccionado:</strong> </label><br>
         <select id="aulas">
-            <option value="none">-- Selecciona destino --</option>
-            <option value="AULA_101">Aula 101 (Química Orgánica) - PB</option>
-            <option value="AULA_102">Aula 102 (Laboratorio Central) - PB</option>
-            <option value="BANYO_S_GENERO">Baño sin género - 1° Piso</option>
-            <option value="PASTEUR">Pasteur (L) - 1° Piso</option>
-            <option value="INORGANICA">Qca. Inorgánica (L) - 1° Piso</option>
-            <option value="VUCETICH">Vucetich (A) - 1° Piso</option>
-            <option value="INTRODUCCION">Introducción a la Qca. (L) - 1° Piso</option>
-            <option value="LAB_CHICO">Laboratorio chico (L) - 1° Piso</option>
-            <option value="ASCENSOR_P1">Ascensor - 1° Piso</option>
-            <option value="ORGANICA_SUP">Qca. Orgánica Superior (L) - 1° Piso</option>
-            <option value="ANALITICA_1">Qca. Analítica I (L) - 1° Piso</option>
-            <option value="SALIDA_EMERGENCIA_P1">Salida Emergencia - 1° Piso</option>
-        </select>
+            </select>
 
         <div id="indicador-posicion">Posición: (X: 0.0, Y: 0.0, Z: 0.0)</div>
         <div id="indicador-distancia">Distancia al aula: -- m</div>
@@ -59,7 +80,7 @@
         <div>
             <button class="btn-dev" id="btn-avanzar">Avanzar 2 metros</button>
             <button class="btn-dev btn-reset" id="btn-reset">Reset</button>
-            <a href="index.html" class="btn-volver">Plano Gral.</a>
+            <a href="index.html" class="btn-volver">Volver al Plano</a>
         </div>
     </div>
 
@@ -81,15 +102,100 @@
     <script>
         let usuarioPos = { x: 0, y: 0, z: 0 }; 
         let destinoActual = "none";
+        let edificioActual = "";
+
+        // DICCIONARIO OFICIAL ACTUALIZADO DE AULAS POR EDIFICIO
+        const AULAS_POR_EDIFICIO = {
+            quimica: [
+                { value: "PASTEUR", label: "Lab. Pasteur (1° Piso)" },
+                { value: "INORGANICA", label: "Lab. Qca. Inorgánica (1° Piso)" },
+                { value: "VUCETICH", label: "Aula Vucetich (1° Piso)" },
+                { value: "INTRODUCCION", label: "Lab. Introducción a la Qca. (1° Piso)" },
+                { value: "LAB_CHICO", label: "Laboratorio chico (1° Piso)" },
+                { value: "ORGANICA_SUP", label: "Lab. Qca. Orgánica Superior (1° Piso)" },
+                { value: "ANALITICA_1", label: "Lab. Qca. Analítica I (1° Piso)" },
+                { value: "BANYO_S_GENERO", label: "Baño sin género (1° Piso)" },
+                { value: "ASCENSOR_P1", label: "Ascensor (1° Piso)" },
+                { value: "SALIDA_EMERGENCIA_P1", label: "Salida Emergencia (1° Piso)" }
+            ],
+            herrero: [
+                { value: "AULA_101", label: "Aula 101 - PB" },
+                { value: "AULA_102", label: "Aula 102 - PB" }
+            ],
+            fisica: [{ value: "none", label: "-- Próximamente Edificio de Física --" }],
+            matematica: [{ value: "none", label: "-- Próximamente Edificio de Matemática --" }],
+            abuelas: [{ value: "none", label: "-- Próximamente Edificio Abuelas --" }]
+        };
 
         const selectorAulas = document.getElementById('aulas');
+        const tituloEdificio = document.getElementById('titulo-edificio');
+        const cartelCalibracion = document.getElementById('cartel-calibracion');
         const guiaNavegacion = document.getElementById('guia-navegacion');
         const indicadorDistancia = document.getElementById('indicador-distancia');
         const indicadorPosicion = document.getElementById('indicador-posicion');
         const btnAvanzar = document.getElementById('btn-avanzar');
         const btnReset = document.getElementById('btn-reset');
 
-        // FUNCIÓN PRINCIPAL: Calcula la ruta óptima y orienta la flecha
+        // CARGA INICIAL: Sincronización y lectura de la URL (?edificio=X&destino=Y)
+        window.addEventListener('DOMContentLoaded', () => {
+            const parametrosURL = new URLSearchParams(window.location.search);
+            edificioActual = parametrosURL.get('edificio') || 'quimica';
+            const destinoInicial = parametrosURL.get('destino') || 'none';
+
+            // Corrección explícita de los títulos de la interfaz de usuario
+            const nombresFormateados = {
+                herrero: "Edificio Herrero Ducloux",
+                quimica: "Edificio de Química",
+                fisica: "Edificio de Física",
+                matematica: "Edificio de Matemática",
+                abuelas: "Edificio Abuelas de Plaza de Mayo"
+            };
+            tituloEdificio.innerText = nombresFormateados[edificioActual] || "Navegador AR";
+
+            // Rellenar menú desplegable dinámico
+            selectorAulas.innerHTML = '<option value="none">-- Selecciona destino --</option>';
+            const listaAulas = AULAS_POR_EDIFICIO[edificioActual] || [];
+            listaAulas.forEach(aula => {
+                const option = document.createElement('option');
+                option.value = aula.value;
+                option.innerText = aula.label;
+                selectorAulas.appendChild(option);
+            });
+
+            // Si vino un destino preseleccionado desde el buscador global, lo inyectamos directamente
+            if (destinoInicial !== 'none' && listaAulas.some(a => a.value === destinoInicial)) {
+                selectorAulas.value = destinoInicial;
+                destinoActual = destinoInicial;
+                actualizarNavegacion();
+            }
+        });
+
+        // RECONOCIMIENTO REAL DE MARCADORES QR (Lógica de Calibración 8th Wall)
+        // Registramos un componente de A-Frame para interceptar cuando la cámara escanea el QR en el plano real
+        AFRAME.registerComponent('reconocedor-qr-calibracion', {
+            init: function () {
+                this.el.addEventListener('xrimagefound', (e) => {
+                    // El nombre del target QR impreso debe coincidir con el nodo inicial configurado en mapa.js
+                    const nombreQrEscaneado = e.detail.name; // Ej: "ENTRADA_47"
+                    
+                    if (MAPA_CAMPUS.nodos[nombreQrEscaneado]) {
+                        // Reseteamos las coordenadas del usuario al punto exacto donde está pegado el cartel físico
+                        usuarioPos = { ...MAPA_CAMPUS.nodos[nombreQrEscaneado] };
+                        
+                        // Ocultamos el cartel de advertencia visual
+                        cartelCalibracion.style.display = 'none';
+                        console.log(`Calibración exitosa. Ubicación inicial fijada en QR: ${nombreQrEscaneado}`);
+                        
+                        actualizarNavegacion();
+                    }
+                });
+            }
+        });
+        // Inyectamos dinámicamente el componente de escaneo a la escena activa
+        document.querySelector('a-scene').setAttribute('reconocedor-qr-calibracion', '');
+
+
+        // MOTOR DE NAVEGACIÓN Y CÁLCULO DE CAMINO ÓPTIMO (Dijkstra 3D)
         function actualizarNavegacion() {
             if (destinoActual === 'none') {
                 guiaNavegacion.setAttribute('visible', 'false');
@@ -97,27 +203,28 @@
                 return;
             }
 
-            // 1. Localizar el nodo físico del mapa más cercano a la coordenada del usuario
             let nodoMasCercano = "ENTRADA_47"; 
-            let distanciaMinima = Infinity;
+            let SkinnerDistancia = Infinity;
             
+            // Hallar en qué coordenada del grafo se encuentra parado el usuario actualmente
             for (let nombreNodo in MAPA_CAMPUS.nodos) {
                 let d = calcularDistancia3D(usuarioPos, MAPA_CAMPUS.nodos[nombreNodo]);
-                if (d < distanciaMinima) {
-                    distanciaMinima = d;
+                if (d < SkinnerDistancia) {
+                    SkinnerDistancia = d;
                     nodoMasCercano = nombreNodo;
                 }
             }
 
-            // 2. Verificar si el usuario ya llegó a la puerta del destino
             let distanciaAlDestinoFinal = calcularDistancia3D(usuarioPos, MAPA_CAMPUS.nodos[destinoActual]);
+            
+            // Margen de llegada (menos de 80 centímetros es meta alcanzada)
             if (distanciaAlDestinoFinal < 0.8) {
                 guiaNavegacion.setAttribute('visible', 'false');
                 indicadorDistancia.innerText = "¡Has llegado a tu destino!";
                 return;
             }
 
-            // 3. Resolver Dijkstra 3D
+            // Ejecutar el algoritmo de Dijkstra importado desde mapa.js
             const resultado = encontrarCaminoOptimo(nodoMasCercano, destinoActual);
             const ruta = resultado.ruta;
 
@@ -125,7 +232,6 @@
                 orientarFlechaHacia(MAPA_CAMPUS.nodos[destinoActual]);
                 indicadorDistancia.innerText = `Distancia al aula: ${distanciaAlDestinoFinal.toFixed(1)} metros`;
             } else {
-                // Apuntar la flecha hacia el siguiente punto de control o bifurcación
                 let siguientePuntoControl = MAPA_CAMPUS.nodos[ruta[1]];
                 orientarFlechaHacia(siguientePuntoControl);
                 
@@ -138,7 +244,6 @@
             indicadorPosicion.innerText = `Posición: (X: ${usuarioPos.x.toFixed(1)}, Y: ${usuarioPos.y.toFixed(1)}, Z: ${usuarioPos.z.toFixed(1)})`;
         }
 
-        // ROTACIÓN GEOMÉTRICA DE LA FLECHA EN A-FRAME
         function orientarFlechaHacia(targetCoords) {
             const dx = targetCoords.x - usuarioPos.x;
             const dy = targetCoords.y - usuarioPos.y; 
@@ -151,31 +256,30 @@
             guiaNavegacion.setAttribute('rotation', `${anguloVertical} ${anguloHorizontal} 0`);
         }
 
-        // Escucha cambios manuales en el selector interno
         selectorAulas.addEventListener('change', (e) => {
             destinoActual = e.target.value;
             actualizarNavegacion();
         });
 
-        // SIMULADOR PASO A PASO PARA ALFA TESTING
+
+        // BOTONES DE DESARROLLO Y DIAGNÓSTICO (Alpha Tester)
         btnAvanzar.addEventListener('click', () => {
             if (destinoActual === 'none') return;
+            cartelCalibracion.style.display = 'none'; // El bypass de simulación asume calibración implícita
             
             const targetNodo = MAPA_CAMPUS.nodos[destinoActual];
             const esPrimerPiso = (targetNodo.y > 0);
 
             if (esPrimerPiso) {
-                // Simulación del recorrido exacto por la escalera y pasillo alto
                 if (usuarioPos.y < 5.3 && usuarioPos.z > -12.0) {
-                    usuarioPos.z -= 2.0; // Avanza hacia la base de la escalera
+                    usuarioPos.z -= 2.0;
                 } else if (usuarioPos.z <= -12.0 && usuarioPos.y < 5.3) {
-                    usuarioPos.y += 1.325; // Sube los escalones verticalmente (en 4 clics llega a 5.3)
+                    usuarioPos.y += 1.325;
                     if(usuarioPos.y > 5.3) usuarioPos.y = 5.3;
                 } else if (usuarioPos.y >= 5.3 && usuarioPos.z > targetNodo.z) {
-                    usuarioPos.z -= 2.0; // Camina en línea recta devorando metros de Z por el pasillo central
+                    usuarioPos.z -= 2.0;
                     if(usuarioPos.z < targetNodo.z && targetNodo.x === 0) usuarioPos.z = targetNodo.z;
                 } else {
-                    // Dobla 90 grados a izquierda o derecha cuando llega a la altura Z del aula
                     if (usuarioPos.x < targetNodo.x) {
                         usuarioPos.x += 1.0;
                         if(usuarioPos.x > targetNodo.x) usuarioPos.x = targetNodo.x;
@@ -185,7 +289,6 @@
                     }
                 }
             } else {
-                // Simulación clásica de Planta Baja (Aulas 101 y 102)
                 if (usuarioPos.z > -8.0) {
                     usuarioPos.z -= 2.0;
                 } else {
@@ -205,21 +308,8 @@
             usuarioPos = { x: 0, y: 0, z: 0 };
             destinoActual = "none";
             selectorAulas.value = "none";
+            cartelCalibracion.style.display = 'block';
             actualizarNavegacion();
-        });
-
-        // INTEGRACIÓN ALFA: Lee de manera automática el aula destino pasada en la URL desde la bienvenida
-        window.addEventListener('DOMContentLoaded', () => {
-            const parametrosURL = new URLSearchParams(window.location.search);
-            const destinoSugerido = parametrosURL.get('destino');
-
-            if (destinoSugerido && MAPA_CAMPUS.nodos[destinoSugerido]) {
-                destinoActual = destinoSugerido;
-                selectorAulas.value = destinoSugerido;
-                setTimeout(() => {
-                    actualizarNavegacion();
-                }, 500);
-            }
         });
     </script>
 </body>
